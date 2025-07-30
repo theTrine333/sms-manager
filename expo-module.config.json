@@ -1,9 +1,9 @@
 {
-  "platforms": ["apple", "android", "web"],
-  "apple": {
-    "modules": ["SmsManagerModule"]
-  },
+  "platforms": ["android", "ios"],
   "android": {
-    "modules": ["expo.modules.smsmanager.SmsManagerModule"]
+    "srcDir": "android/src/main/java/expo/modules/smsmanager"
+  },
+  "ios": {
+    "srcDir": "ios"
   }
 }

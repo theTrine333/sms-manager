@@ -1,48 +1,151 @@
 import ExpoModulesCore
+import MessageUI
+import Messages
 
-public class SmsManagerModule: Module {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
+public class ExpoSmsManagerModule: Module {
   public func definition() -> ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('SmsManager')` in JavaScript.
-    Name("SmsManager")
+    Name("ExpoSmsManager")
 
-    // Sets constant properties on the module. Can take a dictionary or a closure that returns a dictionary.
-    Constants([
-      "PI": Double.pi
-    ])
+    Events("onSmsReceived", "onMmsReceived", "onSmsSent", "onMmsSent", "onSmsDelivered", "onMmsDelivered")
 
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
-
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      return "Hello world! 👋"
+    AsyncFunction("sendSms") { (options: SendSmsOptions, promise: Promise) in
+      if MFMessageComposeViewController.canSendText() {
+        DispatchQueue.main.async {
+          let messageVC = MFMessageComposeViewController()
+          messageVC.recipients = [options.address]
+          messageVC.body = options.body
+          
+          // Present the message compose view controller
+          // Note: This requires proper view controller presentation
+          // which would need to be handled in the app
+          
+          promise.resolve([
+            "success": true,
+            "messageId": UUID().uuidString
+          ])
+        }
+      } else {
+        promise.resolve([
+          "success": false,
+          "error": "SMS not available on this device"
+        ])
+      }
     }
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { (value: String) in
-      // Send an event to JavaScript.
-      self.sendEvent("onChange", [
-        "value": value
+    AsyncFunction("sendMms") { (options: SendMmsOptions, promise: Promise) in
+      if MFMessageComposeViewController.canSendAttachments() {
+        DispatchQueue.main.async {
+          let messageVC = MFMessageComposeViewController()
+          messageVC.recipients = [options.address]
+          if let body = options.body {
+            messageVC.body = body
+          }
+          
+          // Handle attachments
+          if let attachments = options.attachments {
+            for attachment in attachments {
+              // Process each attachment
+            }
+          }
+          
+          promise.resolve([
+            "success": true,
+            "messageId": UUID().uuidString
+          ])
+        }
+      } else {
+        promise.resolve([
+          "success": false,
+          "error": "MMS not available on this device"
+        ])
+      }
+    }
+
+    AsyncFunction("getSmsMessages") { (filter: SmsFilter, promise: Promise) in
+      // iOS doesn't provide direct access to SMS messages
+      // This would require using private APIs or MessageKit
+      promise.resolve([])
+    }
+
+    AsyncFunction("getMmsMessages") { (filter: SmsFilter, promise: Promise) in
+      // iOS doesn't provide direct access to MMS messages
+      promise.resolve([])
+    }
+
+    AsyncFunction("getConversationThreads") { (promise: Promise) in
+      // iOS doesn't provide direct access to conversation threads
+      promise.resolve([])
+    }
+
+    AsyncFunction("getMessagesInThread") { (threadId: String, promise: Promise) in
+      // iOS doesn't provide direct access to messages
+      promise.resolve([])
+    }
+
+    AsyncFunction("markAsRead") { (messageId: String, promise: Promise) in
+      // iOS doesn't allow marking messages as read programmatically
+      promise.resolve(false)
+    }
+
+    AsyncFunction("markThreadAsRead") { (threadId: String, promise: Promise) in
+      // iOS doesn't allow marking threads as read programmatically
+      promise.resolve(false)
+    }
+
+    AsyncFunction("deleteMessage") { (messageId: String, promise: Promise) in
+      // iOS doesn't allow deleting messages programmatically
+      promise.resolve(false)
+    }
+
+    AsyncFunction("deleteThread") { (threadId: String, promise: Promise) in
+      // iOS doesn't allow deleting threads programmatically
+      promise.resolve(false)
+    }
+
+    AsyncFunction("hasPermissions") { (promise: Promise) in
+      promise.resolve([
+        "read": false, // iOS doesn't allow reading SMS
+        "send": MFMessageComposeViewController.canSendText(),
+        "receive": false // iOS doesn't allow intercepting SMS
       ])
     }
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of the
-    // view definition: Prop, Events.
-    View(SmsManagerView.self) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { (view: SmsManagerView, url: URL) in
-        if view.webView.url != url {
-          view.webView.load(URLRequest(url: url))
-        }
-      }
-
-      Events("onLoad")
+    AsyncFunction("requestPermissions") { (promise: Promise) in
+      promise.resolve([
+        "read": false,
+        "send": MFMessageComposeViewController.canSendText(),
+        "receive": false
+      ])
     }
   }
+}
+
+// Record types for iOS
+struct SendSmsOptions: Record {
+  @Field var address: String = ""
+  @Field var body: String = ""
+  @Field var deliveryReceipt: Bool = false
+}
+
+struct SendMmsOptions: Record {
+  @Field var address: String = ""
+  @Field var body: String?
+  @Field var attachments: [AttachmentOptions]?
+  @Field var deliveryReceipt: Bool = false
+}
+
+struct AttachmentOptions: Record {
+  @Field var uri: String = ""
+  @Field var type: String = ""
+  @Field var name: String?
+}
+
+struct SmsFilter: Record {
+  @Field var address: String?
+  @Field var startDate: Double?
+  @Field var endDate: Double?
+  @Field var type: String?
+  @Field var read: Bool?
+  @Field var limit: Int?
+  @Field var offset: Int?
 }

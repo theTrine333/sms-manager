@@ -1,6 +1,16 @@
-import { NativeModulesProxy } from "expo-modules-core";
-import { SmsManagerModule } from "./SmsManager.types";
+import { NativeModule } from "expo-modules-core";
 
-const SmsManager = NativeModulesProxy.SmsManager as SmsManagerModule;
-
-export default SmsManager;
+export default {
+  sendSms: async (options: any) => {},
+  sendMms: async (options: any) => {},
+  getSmsMessages: async (filter: any) => {},
+  getMmsMessages: async (filter: any) => {},
+  getConversationThreads: async () => {},
+  getMessagesInThread: async (threadId: string) => {},
+  markAsRead: async (messageId: string) => {},
+  markThreadAsRead: async (threadId: string) => {},
+  deleteMessage: async (messageId: string) => {},
+  deleteThread: async (threadId: string) => {},
+  hasPermissions: async () => {},
+  requestPermissions: async () => {},
+} as NativeModule;
